@@ -1,0 +1,1960 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   🎨 🌟【プロ最終確定】ゲーム盤面周辺 コイン立体感完全保護・超軽量CSS
+   ========================================================================= */
+
+
+ 
+    /* 1. ゲーム画面全体の長押し・文字選択を完全に禁止して誤作動を防ぐ */
+    .app-screen {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    /* 2. 駒、ボードのマス、手札の隙間など、タップするエリアの「拡大待ち遅延」を全廃する */
+    .cell-3d, .puck-svg-container, .hand-piece-slot, .board-iso-grid {
+      touch-action: manipulation;
+      cursor: pointer; /* パソコンでも押しやすくするお守り */
+    }
+
+
+
+
+
+body {
+  background: linear-gradient(160deg, #1a1a35, #2d2d4d, #3d3d66);
+  min-height: auto; 
+  margin: 0; 
+  padding: 0; 
+  font-family: sans-serif; 
+  overflow-x: hidden;  
+}
+
+.app-screen {
+  width: 100%; 
+  max-width: 400px; 
+  min-height: 100dvh; 
+  margin: 0 auto; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center;
+  padding: 16px 12px 28px 12px; 
+  position: relative; 
+  box-sizing: border-box; 
+  gap: 4px;  
+}
+
+/* 上下に自動クッションを入れて中身を真ん中に押し込む */
+.app-screen::before,
+.app-screen::after {
+  content: "";
+  margin: auto;
+}
+
+/* 🌟 ゲーム盤のスペース（サイズ・マージン完全維持） */
+.board-space-block { 
+  width: 100%;
+  height: 250px;             
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  position: relative; 
+  margin: -2px 0 35px 0;    
+
+  /* 💡 ⭕ 【プロの解決策】3D空間を潰してしまう原因だった影（filter）を、
+     この外側の2Dブロックに引っ越しさせました！
+     これで盤面全体の「重厚で美しい影」を100%綺麗に維持します。 */
+  filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.7));
+}
+
+/* 🌟 カメラの視点設定 */
+.board-scaler { 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  perspective: 1000px; 
+  width: 100%; 
+}
+
+/* 🌟 立体アイソメトリック盤面本体 */
+.board-iso-grid { 
+  display: grid; 
+  grid-template-columns: repeat(3, 80px); 
+  gap: 8px; 
+  padding: 12px; 
+  justify-items: center;
+  background: linear-gradient(135deg, #161633, #0b0b1f); 
+  border-radius: 16px; 
+  border: 3px solid #8a8ab5; 
+  
+  /* 📌 プロの調整された美しい傾きと preserve-3d 構造は100%完全維持 */
+  transform: rotateX(34deg) rotateZ(-6deg); 
+  transform-style: preserve-3d; 
+  transform-origin: center center; 
+
+  /* ❌ 💡 【バグ原因の全廃】コインをペタンコに潰してしまっていた原因である
+     ここにあった重い box-shadow および filter: drop-shadow を完全に全削除！
+     これで、上に載るコインの3Dの奥行き、厚み、ぷっくりした影が、最も美しかった元の状態へ完璧に大復活します。 */
+}
+
+/* 🌟 3D各マス目（80px完全一致） */
+.cell-3d { 
+  width: 80px;  
+  height: 80px;  
+  position: relative; 
+  transform-style: preserve-3d; 
+  cursor: pointer; 
+  -webkit-tap-highlight-color: transparent;
+
+  /* 💡 【解決策①】3D空間の重なりで、クリックの当たり判定が裏側に消えるのを防ぐ */
+  backface-visibility: visible;
+}
+
+/* マス目の表面（inset: 0 のまま、見た目を100%キープ！） */
+.cell-top { 
+  position: absolute; 
+  inset: 0; 
+  background: linear-gradient(135deg, #3d3d5d, #252540); 
+  border: 4px solid #8a8ab5; 
+  border-radius: 8px; 
+  transform: translateZ(0px); 
+
+  /* 💡 【解決策②】マス目の表面が、クリックの信号を確実にキャッチするように固定 */
+  pointer-events: auto;
+
+ /* ==========================================================
+     📱 【ここを追加！】スマホの「指の肉」のズレを100%拾うプロの最終兵器
+     ========================================================== */
+  
+  /* ① 見た目のサイズはそのままに、透明なタップ判定だけを外側に4pxずつガッと広げる */
+  outline: 4px solid transparent; 
+
+  /* ② スマホで触れた瞬間の「拡大待ち（300ms遅延）」を、このマス目でも完全にカットする */
+  touch-action: manipulation;
+
+  /* ③ 3Dの重なりで、後ろに隠れた判定を無理やり一番手前に引きずり出す */
+  transform: translateZ(1px); 
+
+
+}
+
+
+/* マス目の厚み（手前の壁） */
+.cell-front { 
+  position: absolute; 
+  left: 0; 
+  right: 0; 
+  bottom: -3px; 
+  height: 3px; 
+  background: linear-gradient(180deg, #141426, #06060c); 
+  border-radius: 0 0 4px 4px; 
+  border: 1px solid #4a4a6b; 
+  border-top: none; 
+  transform-origin: top; 
+  transform: rotateX(-90deg); 
+}
+
+/* マス目の厚み（右側の壁） */
+.cell-right { 
+  position: absolute; 
+  top: 0; 
+  bottom: 0; 
+  right: -3px; 
+  width: 3px; 
+  background: linear-gradient(90deg, #181830, #080814); 
+  border-radius: 0 4px 4px 0; 
+  border: 1px solid #4a4a6b; 
+  border-left: none; 
+  transform-origin: left; 
+  transform: rotateY(90deg); 
+}
+
+
+/* ==========================================================================
+   🌟 [プロ最終確定] パック（コイン）関連 ＆ ハイライト超軽量化CSS
+   ========================================================================== */
+
+/* 2. コインのSVG画像を包むコンテナ（ここを修正！） */
+.puck-svg-container {
+  position: absolute;
+  width: 66px;     
+  height: 66px; 
+  bottom: 8px;     
+  left: calc(50% - 33px); 
+  transform-origin: bottom center; 
+  overflow: visible;
+
+  /* 💡 【解決策③】none（無視）から auto（クリックを吸い込む）に変更！
+     これにより、重なったコインのどこを適当にクリックしても、
+     JavaScript（React）に「このマスの駒が押されたよ！」と100%電波が届くようになります */
+  pointer-events: auto;
+
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1); 
+}
+.puck-svg-container svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* 何枚重なっているかを示す数字バッジ（位置完全復元版） */
+.stack-count-badge {
+  position: absolute;
+  /* 📌 プロが目視調整した、コインのフチに綺麗に寄り添う元の位置を100%完全復元！ */
+  bottom: -6px;   
+  right: 10px;  
+  left: auto;
+  top: auto;
+  margin: 0;
+  font-size: 20px;
+  color: #fff;
+  font-weight: 900;
+  
+  /* 💡 低負荷かつ、数字がクッキリ浮き上がって読みやすくなる高品質な影 */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+  
+  /* 📌 コインの厚みに埋もれないように、3D空間の一番手前に浮かせる魔法を完全維持 */
+  transform: translateZ(24px); 
+}
+
+
+
+/* 4. 👆 選択中のマス（マス目クリック時）のハイライト */
+.cell-selected .cell-top { 
+  border-color: #ffffff; 
+  /* ❌ 重い box-shadow を全廃。代わりに立体感を壊さない最速の drop-shadow を採用 */
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+}
+
+/* 5. 🟢 移動・配置可能な有効マスのハイライト */
+.cell-valid .cell-top { 
+  border-color: #22c55e; 
+  /* ❌ 重い多重 box-shadow (inset等) を全廃。GPUに一番優しい緑のドロップシャドウに一本化！ */
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.6));
+}
+  
+/* 6. ⏱️ 直前の着手マス（光るエフェクト用・GPU完全駆動版） */
+.cell-last-move .cell-top {
+  border-color: #facc15; /* 💡 ひと目で直前の手が分かるようにゴールドゴールドしたフチ線に固定 */
+  /* ⭕ 重いボカシの伸縮アニメーションを全廃し、最速プロパティの「透明度明滅」で滑らかに同期点滅！ */
+  animation: lastMovePulse 1.6s infinite ease-in-out; 
+  will-change: opacity;
+}
+
+/* 直前着手マスの超軽量パルスアニメーション定義 */
+@keyframes lastMovePulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1.0; }
+}
+
+
+
+/* ==========================================================================
+   🌟 ボードゲーム・コアエフェクト集（プロ仕様・超軽量・最終統合版）
+   ========================================================================== */
+
+/* ── ① アニメーションの定義 (@keyframes) ── */
+
+/* 💡 コマ（Puck）専用：白線の透明度を揺らす */
+@keyframes puckStrokePulse {
+  0%, 100% { stroke-opacity: 0.25; } 
+  50% { stroke-opacity: 1.0; }       
+}
+
+/* 💡 勝利マス専用：GPU処理（opacity）で確実に滑らか点滅（負荷ゼロ） */
+@keyframes winCellPulse {
+  0%, 100% { opacity: 0.35; } 
+  50% { opacity: 1.0; } 
+}
+
+/* 💡 手札エリア・手番ヘッダー用 */
+@keyframes syncPulseFast {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1.0; }
+}
+
+
+/* ── ② コマのふち同期点滅 (Puck) ── */
+.puck-svg-container.is-glowing .puck-stroke,
+.puck-svg-container.is-glowing .puck-side {
+  stroke: #ffffff !important;
+  stroke-width: 1.5px !important;
+  animation: puckStrokePulse 2s infinite ease-in-out !important;
+}
+
+
+/* ── ③ 勝利マスの発光エフェクト (CellStack) ── */
+
+/* 🔵 プレイヤー1（青）の勝利マス */
+.cell-win-blue .cell-top { 
+  border-color: #60a5fa !important;
+  background: linear-gradient(135deg, #1e3a8a, #0f172a) !important;
+  animation: winCellPulse 1.2s infinite ease-in-out !important; 
+}
+
+/* 🟡 プレイヤー2 / CPU（アンバー）の勝利マス */
+.cell-win-amber .cell-top { 
+  border-color: #eab308 !important;
+  background: linear-gradient(135deg, #665011, #1f1702) !important;
+  animation: winCellPulse 1.2s infinite ease-in-out !important; 
+}
+
+
+/* ── ④ 全体停止命令 (ポップアップ出現時にアニメーション停止・全端末高速安定版) ── */
+/* 💡 App側で決着時に付与される .is-game-over と、モーダル出現時の .reward-modal-overlay に連動させ、
+   低スペックなスマホでも100%確実に、一瞬で全ての点滅を最も明るい状態でフリーズ（固定）させます。 */
+.is-game-over .puck-stroke,
+.is-game-over .puck-side,
+.is-game-over .cell-top,
+body:has(#rewardModalOverlay) .puck-stroke,
+body:has(#rewardModalOverlay) .puck-side,
+body:has(#rewardModalOverlay) .cell-top {
+  animation-play-state: paused !important; 
+  stroke-opacity: 1.0 !important;         
+  opacity: 1.0 !important;                
+}
+
+
+/* ── ⑤ 手札エリア・手番エリア (HandArea) ── */
+.hand-card {
+  position: relative;
+  z-index: 1;
+}
+
+.hand-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  z-index: -1;
+  /* 💡 手番交代時のフチ線のフェードインを、スマホでも1コマも音飛びさせずに美しく滑らかに */
+  transition: opacity 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: opacity;
+}
+
+.animate-syncPulse {
+  animation: syncPulseFast 2s infinite ease-in-out;
+}
+
+/* 🔵 プレイヤー1 (青) の手札アクティブ状態 */
+.hand-card.is-blue::after {
+  border: 1.5px solid rgba(147, 210, 253, 1); 
+  opacity: 1;
+}
+.hand-card.is-blue .hand-player-name {
+  color: #93c5fd;
+  font-weight: bold;
+}
+
+/* 🟡 プレイヤー2 / CPU (アンバー) の手札アクティブ状態 */
+.hand-card.is-amber::after {
+  border: 1.5px solid rgba(254, 240, 138, 1); 
+  opacity: 1;
+}
+.hand-card.is-amber .hand-player-name {
+  color: #fef08a;
+  font-weight: bold;
+}
+
+/* 非手番（お休み中）の手札エリア */
+.hand-card.is-inactive .hand-player-name {
+  color: #9ca3af;
+  opacity: 0.5;
+}
+
+
+
+/* ==========================================================================
+   🪙 1. 手札（コイン・ストック）エリア ハンドエリア（プロ最終最適化・最速版）
+   ========================================================================== */
+
+/* 🌟 手札メインカード（画面横幅いっぱいまでのダイナミックな広がりを完全維持） */
+.hand-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0rem;            
+  align-items: center;  
+  
+  /* 📌 スマホ画面の両端ギリギリまで広げるこだわり設定(98%)を完全維持 */
+  width: 98%;           
+  max-width: 420px;     
+  
+  margin: 0px auto;     
+  padding: 0.2rem 0rem 0rem;  
+  border-radius: 0.75rem;
+  border: 1px solid;
+  
+  /* ❌ スマホ手番交代時の引っ掛かりの原因となる重い transition: all を全廃し、
+     第1弾で確定した「フチ線と手番明滅」だけに最高のパフォーマンスを集中させます */
+}
+
+/* 🌟 プレイヤー名 ＆ 矢印のアッパーヘッダー（中央寄せを完全ロック） */
+.hand-player-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+/* 🌟 プレイヤー名テキスト */
+.hand-player-name {
+  font-weight: 900;
+  font-size: 14px;
+  color: #ffffff; 
+}
+
+/* 非手番時の文字色 */
+.hand-player-name.is-inactive {
+  color: #9ca3af;
+}
+
+/* 🌟 手番を示す緑の三角矢印 */
+.hand-player-arrow {
+  color: #4ade80;
+  font-size: 18px;
+  line-height: 1;
+  user-select: none;
+}
+
+/* 🌟 中央揃えグループ（左寄せの歪みをリセットする100%幅） */
+.hand-area-row,
+.hand-area-inner,
+.hand-piece-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+}
+
+/* 💡 ⭕ 重複していた記述を最軽量の1本にクレンジング統合 */
+.hand-area-row {
+  width: 100%;
+}
+
+/* 🪙 駒1個あたりの枠（42pxスリム化 ＆ 2重定義・時間衝突バグの完全修復） */
+.hand-piece-slot {
+  cursor: pointer;
+  width: 38px;
+  height: 38px;              
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transform-origin: center center;
+
+  /* 📌 プロの設定した縮小表示(scale 0.7)の初期状態を完全維持 */
+  transform: scale(0.7) translateY(8px);
+
+  /* 💡 ⭕ 【バグ修復】0.2sと0.1sで衝突していたtransitionを、
+     あなたが追求した最高にサクサク動く「0.1秒の黄金比」と高精度イージングに美しく統合！ */
+  transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1);
+  
+  /* 💡 コマを選択した瞬間のピョンとした跳ね上がり計算を100%GPUに任せて滑らかにする命綱 */
+  will-change: transform; 
+}
+
+/* 💡★ 選択時にピョンと跳ね上がる高さ（こだわり設定をそっくりそのまま完全維持） */
+.hand-piece-slot.is-selected {
+  transform: scale(0.75) translateY(-10px) !important;
+}
+
+/* 💡 個数テキスト（x5 などの微調整位置を維持） */
+.hand-count-text {
+  color: #9ca3af;
+  font-weight: 900;
+  font-size: 12px;
+  margin-left: 8px;
+  transform: translateY(-3px);
+}
+
+/* 個数ゼロ（なし）テキスト */
+.hand-empty-text {
+  color: #6b7280;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 700;
+}
+
+
+
+/* ==========================================================================
+   🎯 2. 盤面（マス目・セル）の操作感（プロ最終最適化・最速版）
+   ========================================================================== */
+
+/* 押せるマスのカーソル（指マーク） */
+.cell-interactive {
+  cursor: pointer;
+}
+
+/* 押せないマスのカーソル（通常矢印） */
+.cell-disabled {
+  cursor: default;
+}
+
+
+/* ==========================================================================
+   💬 3. 盤面下のメッセージ＆キャンセルボタン（余白・サイズ完全維持）
+   ========================================================================== */
+
+/* メッセージエリア全体の配置（中央揃えなど） */
+.game-message-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
+  min-height: 40px;
+}
+
+/* 駒をタップなどの案内文字の大きさ・太さ */
+.game-message-text {
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 900;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  text-align: center;
+  width: 95%;
+  /* 📌 半角スペースに綺麗に修正されたこだわりの余白を完全維持 */
+  margin-top: 3px;     
+  margin-bottom: 4px;
+  white-space: pre-line;
+  
+  /* ❌ 手番やフェーズが切り替わって文字が変わる瞬間のチラつきの原因となる、
+     ここにあった重い transition: all を全廃し、最速で文字がサクッと切り替わるようにします */
+}
+
+/* ボタンが並ぶ行の高さと中央配置 */
+.game-action-row {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* 「キャンセル」ボタンの形・色・影 */
+.btn-cancel {
+  padding: 6px 24px;
+  background-color: #1f2937;
+  color: #d1d5db;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid #4b5563;
+  
+  /* 💡 【軽量化】重複したボカシ計算を抑え、ボタン出現時の描画をさらにサクサクにする低負荷な影 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  
+  /* 💡 タップした瞬間の縮み動きを最高に気持ちよく滑らかに駆動させる設定 */
+  transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+
+/* キャンセルボタンを押した瞬間にちょっと縮む動き（こだわり設定をそのまま完全維持） */
+.btn-cancel:active {
+  transform: scale(0.95);
+}
+/* ==========================================================================
+   🔢 4. 移動個数の選択UI（1個移動・2個移動など・プロ最終最適化版）
+   ========================================================================== */
+
+/* 移動個数選択エリア全体 */
+.move-count-selector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+}
+
+/* 「取る数:」ラベルテキスト */
+.move-count-label {
+  color: #e5e7eb;
+  font-size: 12px;
+  font-weight: 900;
+  margin-right: 4px;
+}
+
+/* 数字ボタン・戻るボタン共通の基本スタイル */
+.selector-btn {
+  height: 28px;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  
+  /* 💡 タップした瞬間の凹み動きを最高に気持ちよく滑らかに駆動させる設定 */
+  transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.1s ease;
+  will-change: transform;
+  
+  /* スマホタップ時の無駄なグレーの選択ハイライトを消すプロの安全ピン */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ボタンを押した瞬間にちょっと凹む動き（こだわり設定をそのまま完全維持） */
+.selector-btn:active {
+  transform: scale(0.95);
+}
+
+/* 数字決定ボタン（青/インディゴ背景） */
+.btn-primary {
+  background-color: #4f46e5;
+  color: #ffffff;
+  border: none;
+}
+
+/* ❌ スマホでの色残りの原因となる、不要な .btn-primary:hover は完全に全削除しました */
+
+/* 戻るボタン（ダークグレー背景） */
+.btn-secondary {
+  background-color: #1f2937;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+  margin-left: 4px;
+}
+
+
+/* ==========================================================================
+   ⏱️ タイマー表示のスタイル（上下中央揃え・全角スペースバグ完全修復版）
+   ========================================================================== */
+.timer-display {
+  /* 📌 上下左右をド真ん中に揃えるこだわりのFlexbox構造を完全維持 */
+  display: flex;           
+  justify-content: center; 
+  align-items: center;     
+  
+  font-size: 0.9rem;        
+  font-weight: bold;       
+  color: #e0e0ff;          
+  padding-top: 3px;
+  
+  /* 💡 ⭕ 【バグ完全修復】先頭に紛れ込んで表示崩れを引き起こしていた
+     「全角スペース」を1文字残さず綺麗に全消去しました！ */
+  margin-bottom: 2px;     
+  text-align: center;      
+}
+
+/* ⏱️ タイマーの絵文字（アイコン）だけのスタイル（位置微調整完全維持） */
+.timer-display .timer-icon {
+  font-size: 1.1rem;       
+  margin-right: 4px;       
+  line-height: 1;          
+
+  /* 📌 文字の高さとピタッと揃える、上に2px持ち上げる設定を100%完全維持 */
+  display: inline-block;       
+  transform: translateY(-2px); 
+}
+
+/* 🌟 ラスト10秒の赤点滅（1秒同期 ＆ 視認性重視・濃いめ版） */
+.timer-display.warning {
+  color: #ff4d4d;
+  /* 💡 1秒のカウントダウンにシンクロする 1.0s 周期 */
+  animation: timerBlink 1.0s infinite alternate ease-in-out;
+  will-change: opacity;
+}
+
+/* 💡 【視認性最大化】薄くなったときも数字がハッキリ読めるように数値を 0.4 ➔ 0.72 に引き締め！ */
+@keyframes timerBlink {
+  0% { opacity: 0.72; }   /* 💡 1番暗いときでも「濃いめの赤」をしっかり維持します */
+  100% { opacity: 1.0; }  /* 1番明るいときは100%くっきり */
+}
+
+
+
+/* ==========================================================================
+   📖 6. 「遊び方を見る」モーダル画面（滑らかスクロール ＆ プロ最終最適化版）
+   ========================================================================== */
+
+/* 遊び方画面全体のスクロール領域とテキスト（レイアウト・サイズ完全維持） */
+.instruction-container {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  user-select: none;
+  padding: 16px 8px 32px 8px;
+  color: #f3f4f6;
+  max-height: 85vh;
+  overflow-y: auto;
+
+  /* 💡 ⭕ 【スマホ超軽量化】指の動きに合わせてスルスルと軽快に縦スクロールする、
+     プロの慣性スクロール（Hardware Acceleration）を強制発動！
+     これで長文のルールをスクロールした際の一瞬の引っ掛かりが100%消滅します。 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 各段落（セクション）の余白（完全維持） */
+.instruction-section {
+  margin-bottom: 24px;
+}
+
+/* 「1. 勝利条件」などの見出しの文字（色味・サイズ完全維持） */
+.instruction-title {
+  color: #818cf8; /* indigo-400 */
+  font-weight: 900;
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+
+/* 説明文の箇条書き用リスト枠（左側の美しいインディゴ線を完全維持） */
+.instruction-list {
+  padding-left: 12px;
+  border-left: 2px solid #6366f1; /* indigo-500 */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+
+/* ==========================================================================
+   🏠 メインメニュー画面（レイアウト＆ボタン全般・プロ最終最適化版）
+   ========================================================================== */
+
+/* 1. メニュー全体コンテナ */
+.menu-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  text-align: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* 2. 📱 1画面目のメインコンテンツ（タイトル＋ボタン群・余白完全維持） */
+.menu-main-content {
+  width: 100%;
+  min-height: auto; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  /* 📌 下の要素との被りを防ぐこだわりの上下余白を完全維持 */
+  padding: 20px 0 40px 0; 
+}
+
+/* スマホなど縦長画面のときだけ中央揃えのために高さを確保（メディアクエリ完全維持） */
+@media (min-height: 600px) and (max-width: 640px) {
+  .menu-main-content {
+    min-height: calc(100dvh - 80px);
+  }
+}
+
+/* 3. 🔘 メインボタン共通設定（モバイル超高速駆動 ＆ 残像バグ根絶版） */
+.menu-btn {
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 16px;
+  width: 100%;
+  border: none; /* 💡 余計なデフォルト枠線の再計算をシャットアウト */
+  
+  /* 💡 タップした瞬間の凹み動きを最高に気持ちよく滑らかに駆動させる設定 */
+  transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.1s ease;
+  will-change: transform;
+  
+  /* スマホタップ時の無駄なグレーの選択ハイライトを消すプロの安全ピン */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ボタン押下時のぽこっと凹むアニメーション（こだわり倍率0.95を完全維持） */
+.menu-btn:active,
+.btn-menu-back:active {
+  transform: scale(0.95);
+}
+
+/* 4. ボタンカラー各種（配色完全維持） */
+.btn-resume { background: #16a34a; color: #fff; } /* 途中から再開（緑） */
+.btn-2p     { background: #4f46e5; color: #fff; } /* 2人対戦（インディゴ） */
+.btn-ai     { background: #d97706; color: #fff; } /* CPU対戦（アンバー） */
+
+/* 遊び方ボタン（グレー） */
+.btn-sub { 
+  background: #94a3b8;      
+  color: #0f172a; 
+  border: 1px solid #64748b;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* メニューに戻る等（ダークグレー） */
+.btn-menu-back {
+  padding: 10px;
+  background: #1f2937;      
+  border: 1px solid #4b5563;
+  color: #d1d5db;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 12px;
+  text-align: center;
+  
+  /* 💡 戻るボタンの凹みエフェクトも最速のGPU駆動に完全同期 */
+  transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 5. 🏆 実績コレクションパネル（配置位置関係を完全維持） */
+.achievement-panel {
+  width: 100%;
+  max-width: 360px;
+  /* 📌 1画面目の下に綺麗に押し出すこだわりの数値を100%完全維持 */
+  margin-top: -35px;
+  margin-bottom: 32px;
+}
+
+
+
+/* ==========================================================================
+   🔲  ポップアップ（ダイアログ・モーダル）共通（プロ最終最適化・最速版）
+   ========================================================================== */
+
+/* 画面全体を暗くすりガラス状にする背景幕（すりガラス効果完全維持） */
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+}
+
+/* ポップアップ中央の白い/黒いカード枠（サイズ完全維持・影超軽量化版） */
+.overlay-card {
+  background: #111827; 
+  border: 1px solid #374151; 
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  width: 100%;
+  max-width: 320px;
+  
+  /* ❌ スマホ出現時のカクつきの原因となる、重い box-shadow を完全排除。
+     代わりに立体感を美しくキープする低負荷な drop-shadow に変更！ */
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.6));
+}
+
+/* ポップアップ内の決定・OKボタン */
+.overlay-btn {
+  width: 100%;
+  padding: 10px;
+  background: #4f46e5; 
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 14px;
+  border: none; /* 余計なデフォルト枠線の計算をシャットアウト */
+  
+  /* ❌ 重い box-shadow を引き算し、スマートに最適化 */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  
+  /* 💡 タップした瞬間の凹み動きを最高に気持ちよく滑らかに駆動させる設定 */
+  transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ボタン押下時のぽこっと凹むアニメーションを追加して他のボタンと押し心地を統一 */
+.overlay-btn:active {
+  transform: scale(0.95);
+}
+
+/* 🎬 出現アニメーション適用（GPU完全駆動・超軽量版） */
+.overlay-enter { 
+  animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  
+  /* 💡 出現時の一瞬の引っ掛かり（フレームドロップ）を100%防止するプロの命綱 */
+  will-change: transform, opacity;
+}
+
+/* 美しい浮き上がりフェードイン（軌道・イージング完全維持） */
+@keyframes fade-in { 
+  from { 
+    opacity: 0; 
+    transform: scale(0.9) translateY(10px); 
+  } 
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  } 
+}
+
+
+
+/* 💡 ==========================================================================
+   ⏳ 【過密重なり完全全廃 ＆ 自動バトンタッチCSS】
+   ========================================================================== */
+/* お祝い画面（#rewardModalOverlay）が画面に出現している間だけ、
+   その裏にいる通常の勝利画面（.overlay-backdrop）を【display: none】で完全に眠らせます。
+   これにより、裏での無駄なアニメーションや描画の計算が100%ストップして【最軽量化】します。
+   
+   そして、「受け取る！」を押してお祝い画面が消えた瞬間、この制限がパッと外れるため、
+   裏で眠っていた通常の勝利画面が1ミリのラグもなく【自動で表に出現】します！ */
+body:has(#rewardModalOverlay) .overlay-backdrop {
+  display: none !important;
+}
+
+
+
+
+
+/* ==========================================================================
+   🤖 AI（CPU）勝利用ロボットアイコン（GPU完全駆動・プロ最終最適化版）
+   ========================================================================== */
+
+/* 勝利の時、★と🤖を並べる箱（サイズ・余白完全維持） */
+.victory-icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  /* 📌 こだわりの【縦の隙間 12px / 横の隙間 4px】と上下余白16pxを完全維持 */
+  gap: 12px 4px;           
+  width: 100%;             
+  max-width: 100%;        
+  margin: 16px auto;       
+}
+
+/* 🤖 ロボット本体（出現レスポンス最大化版） */
+.icon-robot {
+  /* 📌 プロが目視調整した迫力ある2.8remのサイズ感を100%完全維持 */
+  font-size: 2.8rem; 
+  
+  /* 📌 0.3sの飛び出すスピード感とイージングを完全維持 */
+  animation: victoryPop 0.3s ease-out forwards;
+  
+  /* 💡 【プロの命綱】出現の瞬間に1コマも音飛び（フレームドロップ）させないためのGPUロック */
+  will-change: transform, opacity;
+  
+  /* スマホタップ時等の無駄なハイライトを消す安全ピン */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 💡 【消失防止】ロボット専用の飛び出しアニメーション定義（@keyframes）
+   もし未定義、あるいは別の場所にあればこちらに一本化して最速駆動させます */
+@keyframes victoryPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+
+
+/* ==========================================================================
+   🏆 金・銀・銅 メダル（スター）本体 ＆ 基準点設定 ポップアップ（プロ最終最適化版）
+   ========================================================================== */
+
+.star-medal {
+  /* 📌 プロが目視調整したこだわりの★の大きさを100%完全維持 */
+  width: 90px;               
+  height: 90px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  /* 💡 疑似要素（キラリ✦）を内側に配置するための基準点 */
+  position: relative;         
+
+  /* 🚀 飛び出しアニメーション（出だしの気持ちいい弾力感を完全維持 ＆ 一瞬のカクつきを防止） */
+  animation: victoryPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+  
+  /* スマホタップ時等の無駄なハイライトを消すプロの安全ピン */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── キラリマーク（✦）の超軽量最適化 ── */
+.star-medal::before,
+.star-medal::after {
+  content: '✦';
+  position: absolute;
+  font-size: 14px; /* 📌 ブラウザの文字サイズ再計算を防ぐ固定px設定を完全維持 */
+  color: #ffffff;
+  
+  /* 📌 重い text-shadow の代わりに「重ねがけ」で表現した低負荷な黄金発光を完全維持 */
+  filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.8));
+  
+  opacity: 0;
+  pointer-events: none;
+  
+  /* 💡 4s周期の滑らかまたたきアニメーションを駆動（不要な常時メモリ確保を引き算して最速化） */
+  animation: medalSparkle 4s infinite ease-in-out; 
+}
+
+/* 📍 1箇所目：左上（すぐスタート・位置完全維持） */
+.star-medal::before {
+  top: 15%;
+  left: 15%;
+  animation-delay: 0.5s; 
+}
+
+/* 📍 2箇所目：右下（2.5秒ずらして交互に・プロのtop/left基準を完全維持） */
+.star-medal::after {
+  top: 65%;   
+  left: 65%;
+  animation-delay: 2.5s; 
+}
+
+/* 🌟 ふわーっと光って回転しながら消えるキーフレーム（放物線・イージング完全維持） */
+@keyframes medalSparkle {
+  0% {
+    transform: scale(0.3) rotate(0deg);
+    opacity: 0;
+  }
+  20% {                       /* 💡 約0.8秒かけて「ふわーっ」と光る */
+    transform: scale(1.0) rotate(45deg);
+    opacity: 1;
+  }
+  30% {                       /* 💡 少しだけ光の余韻を残す */
+    transform: scale(1.1) rotate(60deg);
+    opacity: 1;
+  }
+  50% {                       /* 💡 約2.0秒地点に向かって「じわーっ」と消える */
+    transform: scale(0.3) rotate(120deg);
+    opacity: 0;
+  }
+  100% {                      /* 💡 残りの 2秒間 は完全にお休み（ディレイ効果） */
+    transform: scale(0.3) rotate(120deg);
+    opacity: 0;
+  }
+}
+
+/* 💡 アイコンが飛び出すアニメーション（クッションのように戻る心地よさを完全維持） */
+@keyframes victoryPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.12); 
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 勝利数テキスト（シンプル表示・視認性強化版） */
+.streak-count-text {
+  font-size: 16px;
+  /* 📌 弱さをカバーするためにboldに強化された太さを完全維持 */
+  font-weight: bold; 
+  color: #fbbf24;       
+  margin-top: -2px;
+  margin-bottom: 16px;
+  letter-spacing: 1.5px;
+}
+
+
+
+
+/* ==========================================================================
+   ★ 人間勝利用 メタリック星SVG（共通ベース・干渉完全分離 ＆ 最速版）
+   ========================================================================== */
+
+/* 💡 ⭕ 【プロの解決策】実績システムのメダル(90px)を壊さないよう、
+   ポップアップカード（.overlay-card）の中にあるメダルだけをピンポイントに大迫力化します！ */
+.overlay-card .star-medal {
+  /* 📌 プロが目視調整した、勝利画面を引き立てる110pxの大迫力サイズを完全維持 */
+  width: 110px;  
+  height: 110px;
+  margin: 0 auto; /* 中央寄せを確実に効かせるプロの安全ピン */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  
+  /* 📌 0.3sの小気味よい飛び出しスピード感とイージングを完全維持 */
+  animation: victoryPop 0.3s ease-out forwards;
+  
+  /* 💡 飛び出したその一瞬の拡大・フェード計算を100%GPUに任せて滑らかにする命綱 */
+  will-change: transform, opacity;
+  
+  /* スマホタップ時等の無駄なハイライトを消す安全ピン */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 🥇 金の星（右上キラン削除版） */
+.star-medal.gold {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="120" height="120"><defs><linearGradient id="gold-base" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23FFE082"/><stop offset="18%" stop-color="%23FFF59D"/><stop offset="45%" stop-color="%23FFB300"/><stop offset="70%" stop-color="%23FF6F00"/><stop offset="85%" stop-color="%23FFE082"/><stop offset="100%" stop-color="%234E2600"/></linearGradient><linearGradient id="gold-dark" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23FFB300"/><stop offset="50%" stop-color="%23FF6F00"/><stop offset="100%" stop-color="%234E2600"/></linearGradient><linearGradient id="gold-light" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="30%" stop-color="%23FFF8E1"/><stop offset="70%" stop-color="%23FFE082"/><stop offset="100%" stop-color="%23FFB300"/></linearGradient><linearGradient id="gold-rim" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="%234E2600"/><stop offset="25%" stop-color="%23FF6F00"/><stop offset="55%" stop-color="%23FFB300"/><stop offset="80%" stop-color="%23FFF59D"/><stop offset="100%" stop-color="%233E1C00"/></linearGradient><filter id="shadow-gold" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="1" dy="5" stdDeviation="3" flood-color="%233E1C00" flood-opacity="0.75"/></filter></defs><g filter="url(%23shadow-gold)" transform="translate(-2, 4) scale(0.92)"><path d="M 50 12 L 61.8 35.9 L 88.2 39.7 L 69.1 58.3 L 73.6 84.6 L 50 72.2 L 26.4 84.6 L 30.9 58.3 L 11.8 39.7 L 38.2 35.9 Z" fill="none" stroke="url(%23gold-rim)" stroke-width="5" stroke-linejoin="miter"/><path d="M 50 12 L 61.8 35.9 L 88.2 39.7 L 69.1 58.3 L 73.6 84.6 L 50 72.2 L 26.4 84.6 L 30.9 58.3 L 11.8 39.7 L 38.2 35.9 Z" fill="url(%23gold-base)" stroke="%233E1C00" stroke-width="1.5" stroke-linejoin="miter"/><path d="M 50 50 L 73.6 84.6 L 50 72.2 Z" fill="url(%23gold-dark)" opacity="0.75"/><path d="M 50 50 L 30.9 58.3 L 26.4 84.6 Z" fill="url(%23gold-dark)" opacity="0.45"/><path d="M 50 12 L 61.8 35.9 L 50 50 Z" fill="url(%23gold-light)" opacity="0.9"/><path d="M 50 50 L 88.2 39.7 L 69.1 58.3 Z" fill="url(%23gold-light)" opacity="0.8"/><path d="M 50 50 L 11.8 39.7 L 38.2 35.9 Z" fill="url(%23gold-light)" opacity="0.98"/><path d="M 50 12 L 61.8 35.9 L 88.2 39.7" fill="none" stroke="%23FFF8E1" stroke-width="1" opacity="0.9"/><path d="M 50 12 L 50 50" fill="none" stroke="%23FFFFFF" stroke-width="1.2" opacity="0.95"/><path d="M 38.2 35.9 L 50 50 L 88.2 39.7" fill="none" stroke="%23FFF8E1" stroke-width="0.8" opacity="0.8"/></g></svg>');
+}
+
+/* 🥈 銀の星 */
+.star-medal.silver {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="120" height="120"><defs><linearGradient id="silver-base" x1="15%" y1="0%" x2="85%" y2="100%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="20%" stop-color="%23ECEFF1"/><stop offset="45%" stop-color="%2390A4AE"/><stop offset="70%" stop-color="%23455A64"/><stop offset="88%" stop-color="%23CFD8DC"/><stop offset="100%" stop-color="%2337474F"/></linearGradient><linearGradient id="silver-dark" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23CFD8DC"/><stop offset="50%" stop-color="%2390A4AE"/><stop offset="100%" stop-color="%23455A64"/></linearGradient><linearGradient id="silver-light" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="25%" stop-color="%23FFFFFF" stop-opacity="0.8"/><stop offset="60%" stop-color="%23ECEFF1"/><stop offset="100%" stop-color="%23CFD8DC"/></linearGradient><linearGradient id="silver-rim" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="%2337474F"/><stop offset="25%" stop-color="%23455A64"/><stop offset="55%" stop-color="%2390A4AE"/><stop offset="80%" stop-color="%23ECEFF1"/><stop offset="100%" stop-color="%23102027"/></linearGradient><filter id="shadow-silver" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="1" dy="5" stdDeviation="3" flood-color="%23102027" flood-opacity="0.6"/></filter></defs><g filter="url(%23shadow-silver)" transform="translate(-2, 4) scale(0.92)"><path d="M 50 12 L 61.8 35.9 L 88.2 39.7 L 69.1 58.3 L 73.6 84.6 L 50 72.2 L 26.4 84.6 L 30.9 58.3 L 11.8 39.7 L 38.2 35.9 Z" fill="none" stroke="url(%23silver-rim)" stroke-width="5" stroke-linejoin="miter"/><path d="M 50 12 L 61.8 35.9 L 88.2 39.7 L 69.1 58.3 L 73.6 84.6 L 50 72.2 L 26.4 84.6 L 30.9 58.3 L 11.8 39.7 L 38.2 35.9 Z" fill="url(%23silver-base)" stroke="%23263238" stroke-width="1.5" stroke-linejoin="miter"/><path d="M 50 50 L 73.6 84.6 L 50 72.2 Z" fill="url(%23silver-dark)" opacity="0.75"/><path d="M 50 50 L 30.9 58.3 L 26.4 84.6 Z" fill="url(%23silver-dark)" opacity="0.45"/><path d="M 50 12 L 61.8 35.9 L 50 50 Z" fill="url(%23silver-light)" opacity="0.9"/><path d="M 50 50 L 88.2 39.7 L 69.1 58.3 Z" fill="url(%23silver-light)" opacity="0.8"/><path d="M 50 50 L 11.8 39.7 L 38.2 35.9 Z" fill="url(%23silver-light)" opacity="0.98"/><path d="M 50 12 L 61.8 35.9 L 88.2 39.7" fill="none" stroke="%23FFFFFF" stroke-width="1" opacity="0.85"/><path d="M 50 12 L 50 50" fill="none" stroke="%23FFFFFF" stroke-width="1.2" opacity="0.9"/><path d="M 38.2 35.9 L 50 50 L 88.2 39.7" fill="none" stroke="%23FFFFFF" stroke-width="0.8" opacity="0.75"/></g></svg>');
+}
+
+/* 🥉 銅の星 */
+.star-medal.bronze {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="120" height="120"><defs><linearGradient id="bronze-base" x1="15%" y1="0%" x2="85%" y2="100%"><stop offset="0%" stop-color="%23FFF0DD"/><stop offset="20%" stop-color="%23E8956A"/><stop offset="45%" stop-color="%238C3B1A"/><stop offset="70%" stop-color="%23B85830"/><stop offset="88%" stop-color="%23F2C09F"/><stop offset="100%" stop-color="%234A1D0B"/></linearGradient><linearGradient id="bronze-dark" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%239E411B"/><stop offset="50%" stop-color="%236E250A"/><stop offset="100%" stop-color="%233D1102"/></linearGradient><linearGradient id="bronze-light" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="25%" stop-color="%23FFF3E0"/><stop offset="60%" stop-color="%23E8956A"/><stop offset="100%" stop-color="%23B85830"/></linearGradient><linearGradient id="bronze-rim" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="%233D1102"/><stop offset="25%" stop-color="%238C3B1A"/><stop offset="55%" stop-color="%23E8956A"/><stop offset="80%" stop-color="%23FFF0DD"/><stop offset="100%" stop-color="%235C2108"/></linearGradient><filter id="shadow-bronze" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="1" dy="5" stdDeviation="3" flood-color="%23210800" flood-opacity="0.7"/></filter></defs><g filter="url(%23shadow-bronze)" transform="translate(-2, 4) scale(0.92)"><path d="M 50 12 L 61.8 35.9 L 88.2 39.7 L 69.1 58.3 L 73.6 84.6 L 50 72.2 L 26.4 84.6 L 30.9 58.3 L 11.8 39.7 L 38.2 35.9 Z" fill="none" stroke="url(%23bronze-rim)" stroke-width="5" stroke-linejoin="miter"/><path d="M 50 12 L 61.8 35.9 L 88.2 39.7 L 69.1 58.3 L 73.6 84.6 L 50 72.2 L 26.4 84.6 L 30.9 58.3 L 11.8 39.7 L 38.2 35.9 Z" fill="url(%23bronze-base)" stroke="%234A1D0B" stroke-width="1.5" stroke-linejoin="miter"/><path d="M 50 50 L 73.6 84.6 L 50 72.2 Z" fill="url(%23bronze-dark)" opacity="0.75"/><path d="M 50 50 L 30.9 58.3 L 26.4 84.6 Z" fill="url(%23bronze-dark)" opacity="0.45"/><path d="M 50 12 L 61.8 35.9 L 50 50 Z" fill="url(%23bronze-light)" opacity="0.9"/><path d="M 50 50 L 88.2 39.7 L 69.1 58.3 Z" fill="url(%23bronze-light)" opacity="0.8"/><path d="M 50 50 L 11.8 39.7 L 38.2 35.9 Z" fill="url(%23bronze-light)" opacity="0.98"/><path d="M 50 12 L 61.8 35.9 L 88.2 39.7" fill="none" stroke="%23FFFFFF" stroke-width="1" opacity="0.85"/><path d="M 50 12 L 50 50" fill="none" stroke="%23FFFFFF" stroke-width="1.2" opacity="0.9"/><path d="M 38.2 35.9 L 50 50 L 88.2 39.7" fill="none" stroke="%23FFFFFF" stroke-width="0.8" opacity="0.75"/></g></svg>');
+}
+
+
+
+
+/* ==========================================================================
+   🏆 連勝＆実績システム（CSS + HTML + JS 一体型パック）
+========================================================================== */
+
+  
+/* 画面全体を覆う背景 */
+  .reward-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+
+ /* ポップアップの箱（コンパクト化版） */
+.reward-modal-box {
+  background: #111827;
+  border: 2px solid #facc15;
+  border-radius: 16px;
+  padding: 20px; /* 24px ➔ 16px にして内側の余白をスッキリ */
+  text-align: center;
+  width: 90%;   /* 85% ➔ 78% にして画面左右に適度なゆとりを確保 */
+  max-width: 320px; /* 320px ➔ 270px に縮小 */
+  /* ⭕ 【軽量化】重い box-shadow を廃止し、GPU負荷の極めて低い平坦な drop-shadow に変更。色味と雰囲気は維持！ */
+  filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.4));
+  animation: rewardPopUp 0.4s ease-out;
+  color: white;
+  font-family: sans-serif;
+}
+
+  /* メダル枠 */
+.reward-medal-container {
+  position: relative;
+  display: inline-block;
+  margin: 15px 0;
+  padding: 10px;
+}
+
+/* 🏅 SVGメダルの共通設定 */
+.reward-medal-icon {
+  display: inline-block;
+  width: 95px;
+  height: 95px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  vertical-align: middle;
+}
+
+/* ===================================================
+   🥉 銅メダル (星の位置を大幅ダウン・目視中央調整版)
+   =================================================== */
+.medal-bronze {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23FFCCBC"/><stop offset="18%" stop-color="%23FFE0B2"/><stop offset="45%" stop-color="%23D87A51"/><stop offset="70%" stop-color="%238D3C1B"/><stop offset="85%" stop-color="%23E0A98B"/><stop offset="95%" stop-color="%235D220A"/><stop offset="100%" stop-color="%232A0B00"/></linearGradient><linearGradient id="body" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23FFCCBC"/><stop offset="20%" stop-color="%23FFE0B2"/><stop offset="45%" stop-color="%23D87A51"/><stop offset="70%" stop-color="%238D3C1B"/><stop offset="85%" stop-color="%23E0A98B"/><stop offset="100%" stop-color="%235D220A"/></linearGradient><linearGradient id="star" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23FFF3E0"/><stop offset="30%" stop-color="%23FFCCBC"/><stop offset="75%" stop-color="%23D87A51"/><stop offset="100%" stop-color="%234A1D0D"/></linearGradient><linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0"/><stop offset="50%" stop-color="%23ffffff" stop-opacity="0.35"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></linearGradient><filter id="emboss" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="%231F0800" flood-opacity="0.85"/></filter></defs><circle cx="50" cy="50" r="47" fill="url(%23ring)" stroke="%23FFE0B2" stroke-width="0.8"/><circle cx="50" cy="50" r="37" fill="url(%23body)" stroke="%234A1D0D" stroke-width="1.2"/><path d="M 20 20 L 80 20 L 70 80 L 30 80 Z" fill="url(%23shine)" opacity="0.6"/><path d="M 50 37.5 L 53.6 45.6 L 62.1 46.4 L 55.7 52.2 L 57.6 60.5 L 50 55.8 L 42.4 60.5 L 44.3 52.2 L 37.9 46.4 L 46.4 45.6 Z" fill="none" stroke="%23FFE0B2" stroke-width="0.6" opacity="0.8"/><path d="M 50 38 L 53.2 45.8 L 61.5 46.6 L 55.3 52.2 L 57.1 60 L 50 55.5 L 42.9 60 L 44.7 52.2 L 38.5 46.6 L 46.8 45.8 Z" fill="url(%23star)" filter="url(%23emboss)"/></svg>');
+}
+
+/* ===================================================
+   🥈 銀メダル (星の位置を大幅ダウン・目視中央調整版)
+   =================================================== */
+.medal-silver {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23ECEFF1"/><stop offset="18%" stop-color="%23FFFFFF"/><stop offset="45%" stop-color="%2390A4AE"/><stop offset="70%" stop-color="%23455A64"/><stop offset="85%" stop-color="%23CFD8DC"/><stop offset="95%" stop-color="%2337474F"/><stop offset="100%" stop-color="%23102027"/></linearGradient><linearGradient id="body" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23ECEFF1"/><stop offset="20%" stop-color="%23FFFFFF"/><stop offset="45%" stop-color="%2390A4AE"/><stop offset="70%" stop-color="%23455A64"/><stop offset="85%" stop-color="%23CFD8DC"/><stop offset="100%" stop-color="%2337474F"/></linearGradient><linearGradient id="star" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="30%" stop-color="%23ECEFF1"/><stop offset="75%" stop-color="%2390A4AE"/><stop offset="100%" stop-color="%23263238"/></linearGradient><linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0"/><stop offset="50%" stop-color="%23ffffff" stop-opacity="0.45"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></linearGradient><filter id="emboss" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="%23102027" flood-opacity="0.85"/></filter></defs><circle cx="50" cy="50" r="47" fill="url(%23ring)" stroke="%23FFFFFF" stroke-width="0.8"/><circle cx="50" cy="50" r="37" fill="url(%23body)" stroke="%23263238" stroke-width="1.2"/><path d="M 20 20 L 80 20 L 70 80 L 30 80 Z" fill="url(%23shine)" opacity="0.6"/><path d="M 50 37.5 L 53.6 45.6 L 62.1 46.4 L 55.7 52.2 L 57.6 60.5 L 50 55.8 L 42.4 60.5 L 44.3 52.2 L 37.9 46.4 L 46.4 45.6 Z" fill="none" stroke="%23FFFFFF" stroke-width="0.6" opacity="0.8"/><path d="M 50 38 L 53.2 45.8 L 61.5 46.6 L 55.3 52.2 L 57.1 60 L 50 55.5 L 42.9 60 L 44.7 52.2 L 38.5 46.6 L 46.8 45.8 Z" fill="url(%23star)" filter="url(%23emboss)"/></svg>');
+}
+
+/* ===================================================
+   🥇 金メダル (星の位置を大幅ダウン・目視中央調整版)
+   =================================================== */
+.medal-gold {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23FFE082"/><stop offset="18%" stop-color="%23FFF59D"/><stop offset="45%" stop-color="%23FFB300"/><stop offset="70%" stop-color="%23FF6F00"/><stop offset="85%" stop-color="%23FFE082"/><stop offset="95%" stop-color="%23FF8F00"/><stop offset="100%" stop-color="%234E2600"/></linearGradient><linearGradient id="body" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23FFE082"/><stop offset="20%" stop-color="%23FFF59D"/><stop offset="45%" stop-color="%23FFB300"/><stop offset="70%" stop-color="%23FF6F00"/><stop offset="85%" stop-color="%23FFE082"/><stop offset="100%" stop-color="%23FF8F00"/></linearGradient><linearGradient id="star" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="30%" stop-color="%23FFE082"/><stop offset="75%" stop-color="%23FFB300"/><stop offset="100%" stop-color="%23D84315"/></linearGradient><linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0"/><stop offset="50%" stop-color="%23ffffff" stop-opacity="0.45"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></linearGradient><filter id="emboss" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="%233E1C00" flood-opacity="0.85"/></filter></defs><circle cx="50" cy="50" r="47" fill="url(%23ring)" stroke="%23FFF8E1" stroke-width="0.8"/><circle cx="50" cy="50" r="37" fill="url(%23body)" stroke="%233E1C00" stroke-width="1.2"/><path d="M 20 20 L 80 20 L 70 80 L 30 80 Z" fill="url(%23shine)" opacity="0.6"/><path d="M 50 37.5 L 53.6 45.6 L 62.1 46.4 L 55.7 52.2 L 57.6 60.5 L 50 55.8 L 42.4 60.5 L 44.3 52.2 L 37.9 46.4 L 46.4 45.6 Z" fill="none" stroke="%23FFF8E1" stroke-width="0.6" opacity="0.8"/><path d="M 50 38 L 53.2 45.8 L 61.5 46.6 L 55.3 52.2 L 57.1 60 L 50 55.5 L 42.9 60 L 44.7 52.2 L 38.5 46.6 L 46.8 45.8 Z" fill="url(%23star)" filter="url(%23emboss)"/></svg>');
+}
+
+ 
+
+/* 🏆 SVGトロフィーの共通設定 */
+.reward-trophy-icon {
+  display: inline-block;
+  width: 115px;  /* 💡 メダルより一回り大きくして存在感を強調 */
+  height: 115px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  vertical-align: middle;
+ }
+
+
+/* 🥉 銅のトロフィー */
+.trophy-bronze {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="tm-b" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23FFCCBC"/><stop offset="18%" stop-color="%23FFE0B2"/><stop offset="45%" stop-color="%23D87A51"/><stop offset="70%" stop-color="%238D3C1B"/><stop offset="85%" stop-color="%23E0A98B"/><stop offset="95%" stop-color="%235D220A"/><stop offset="100%" stop-color="%232A0B00"/></linearGradient><linearGradient id="tb-b" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23A14723"/><stop offset="50%" stop-color="%234A1D0D"/><stop offset="100%" stop-color="%231F0800"/></linearGradient><linearGradient id="ts-b" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23FFF3E0"/><stop offset="30%" stop-color="%23FFCCBC"/><stop offset="75%" stop-color="%23D87A51"/><stop offset="100%" stop-color="%234A1D0D"/></linearGradient><linearGradient id="t-sh" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0"/><stop offset="50%" stop-color="%23ffffff" stop-opacity="0.4"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></linearGradient><filter id="f-tb" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="%231F0800" flood-opacity="0.85"/></filter></defs><path d="M 32 26 C 10 26, 8 52, 32 54 L 32 46 C 18 45, 18 33, 32 33 Z" fill="url(%23tm-b)"/><path d="M 68 26 C 90 26, 92 52, 68 54 L 68 46 C 82 45, 82 33, 68 33 Z" fill="url(%23tm-b)"/><rect x="22" y="82" width="56" height="13" rx="3" fill="url(%23tb-b)" stroke="%233E1608" stroke-width="0.8"/><rect x="28" y="75" width="44" height="9" rx="2" fill="url(%23tm-b)"/><path d="M 42 56 L 58 56 L 55 76 L 45 76 Z" fill="url(%23tm-b)"/><ellipse cx="50" cy="57" rx="9" ry="2.5" fill="%23FFE0B2"/><path d="M 26 18 L 74 18 C 74 44, 62 60, 50 60 C 38 60, 26 44, 26 18 Z" fill="url(%23tm-b)"/><ellipse cx="50" cy="18" rx="24" ry="5" fill="url(%23tm-b)"/><ellipse cx="50" cy="19" rx="22" ry="4" fill="url(%23tm-b)"/><path d="M 43 18 L 51 18 L 49 60 L 46 60 Z" fill="url(%23t-sh)"/><path d="M 50 26.5 L 52.8 32.8 L 59.5 33.4 L 54.5 38.0 L 56.0 44.5 L 50 40.8 L 44 44.5 L 45.5 38.0 L 40.5 33.4 L 47.2 32.8 Z" fill="none" stroke="%23FFE0B2" stroke-width="0.6" opacity="0.8"/><path d="M 50 27 L 52.5 33 L 59 33.6 L 54.2 38.0 L 55.6 44 L 50 40.5 L 44.4 44 L 45.8 38.0 L 41 33.6 L 47.5 33 Z" fill="url(%23ts-b)" filter="url(%23f-tb)"/></svg>');
+}
+
+/* 🥈 銀のトロフィー */
+.trophy-silver {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="tm-s" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23ECEFF1"/><stop offset="18%" stop-color="%23FFFFFF"/><stop offset="45%" stop-color="%2390A4AE"/><stop offset="70%" stop-color="%23455A64"/><stop offset="85%" stop-color="%23CFD8DC"/><stop offset="95%" stop-color="%2337474F"/><stop offset="100%" stop-color="%23102027"/></linearGradient><linearGradient id="tb-s" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%2378909C"/><stop offset="50%" stop-color="%23263238"/><stop offset="100%" stop-color="%230D171D"/></linearGradient><linearGradient id="ts-s" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="30%" stop-color="%23ECEFF1"/><stop offset="75%" stop-color="%2390A4AE"/><stop offset="100%" stop-color="%23263238"/></linearGradient><linearGradient id="t-sh" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0"/><stop offset="50%" stop-color="%23ffffff" stop-opacity="0.4"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></linearGradient><filter id="f-ts" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="%23102027" flood-opacity="0.85"/></filter></defs><path d="M 32 26 C 10 26, 8 52, 32 54 L 32 46 C 18 45, 18 33, 32 33 Z" fill="url(%23tm-s)"/><path d="M 68 26 C 90 26, 92 52, 68 54 L 68 46 C 82 45, 82 33, 68 33 Z" fill="url(%23tm-s)"/><rect x="22" y="82" width="56" height="13" rx="3" fill="url(%23tb-s)" stroke="%231C282E" stroke-width="0.8"/><rect x="28" y="75" width="44" height="9" rx="2" fill="url(%23tm-s)"/><path d="M 42 56 L 58 56 L 55 76 L 45 76 Z" fill="url(%23tm-s)"/><ellipse cx="50" cy="57" rx="9" ry="2.5" fill="%23FFFFFF"/><path d="M 26 18 L 74 18 C 74 44, 62 60, 50 60 C 38 60, 26 44, 26 18 Z" fill="url(%23tm-s)"/><ellipse cx="50" cy="18" rx="24" ry="5" fill="url(%23tm-s)"/><ellipse cx="50" cy="19" rx="22" ry="4" fill="url(%23tm-s)"/><path d="M 43 18 L 51 18 L 49 60 L 46 60 Z" fill="url(%23t-sh)"/><path d="M 50 26.5 L 52.8 32.8 L 59.5 33.4 L 54.5 38.0 L 56.0 44.5 L 50 40.8 L 44 44.5 L 45.5 38.0 L 40.5 33.4 L 47.2 32.8 Z" fill="none" stroke="%23FFFFFF" stroke-width="0.6" opacity="0.8"/><path d="M 50 27 L 52.5 33 L 59 33.6 L 54.2 38.0 L 55.6 44 L 50 40.5 L 44.4 44 L 45.8 38.0 L 41 33.6 L 47.5 33 Z" fill="url(%23ts-s)" filter="url(%23f-ts)"/></svg>');
+}
+
+/* 🥇 金のトロフィー */
+.trophy-gold {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="tm-g" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23FFE082"/><stop offset="18%" stop-color="%23FFF59D"/><stop offset="45%" stop-color="%23FFB300"/><stop offset="70%" stop-color="%23FF6F00"/><stop offset="85%" stop-color="%23FFE082"/><stop offset="95%" stop-color="%23FF8F00"/><stop offset="100%" stop-color="%234E2600"/></linearGradient><linearGradient id="tb-g" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23FFB300"/><stop offset="50%" stop-color="%238D4000"/><stop offset="100%" stop-color="%233E1C00"/></linearGradient><linearGradient id="ts-g" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="30%" stop-color="%23FFE082"/><stop offset="75%" stop-color="%23FFB300"/><stop offset="100%" stop-color="%23D84315"/></linearGradient><linearGradient id="t-sh" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0"/><stop offset="50%" stop-color="%23ffffff" stop-opacity="0.4"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></linearGradient><filter id="f-tg" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="%233E1C00" flood-opacity="0.85"/></filter></defs><path d="M 32 26 C 10 26, 8 52, 32 54 L 32 46 C 18 45, 18 33, 32 33 Z" fill="url(%23tm-g)"/><path d="M 68 26 C 90 26, 92 52, 68 54 L 68 46 C 82 45, 82 33, 68 33 Z" fill="url(%23tm-g)"/><rect x="22" y="82" width="56" height="13" rx="3" fill="url(%23tb-g)" stroke="%234E2600" stroke-width="0.8"/><rect x="28" y="75" width="44" height="9" rx="2" fill="url(%23tm-g)"/><path d="M 42 56 L 58 56 L 55 76 L 45 76 Z" fill="url(%23tm-g)"/><ellipse cx="50" cy="57" rx="9" ry="2.5" fill="%23FFF59D"/><path d="M 26 18 L 74 18 C 74 44, 62 60, 50 60 C 38 60, 26 44, 26 18 Z" fill="url(%23tm-g)"/><ellipse cx="50" cy="18" rx="24" ry="5" fill="url(%23tm-g)"/><ellipse cx="50" cy="19" rx="22" ry="4" fill="url(%23tm-g)"/><path d="M 43 18 L 51 18 L 49 60 L 46 60 Z" fill="url(%23t-sh)"/><path d="M 50 26.5 L 52.8 32.8 L 59.5 33.4 L 54.5 38.0 L 56.0 44.5 L 50 40.8 L 44 44.5 L 45.5 38.0 L 40.5 33.4 L 47.2 32.8 Z" fill="none" stroke="%23FFF8E1" stroke-width="0.6" opacity="0.8"/><path d="M 50 27 L 52.5 33 L 59 33.6 L 54.2 38.0 L 55.6 44 L 50 40.5 L 44.4 44 L 45.8 38.0 L 41 33.6 L 47.5 33 Z" fill="url(%23ts-g)" filter="url(%23f-tg)"/></svg>');
+}
+
+
+
+
+/* 👑 王冠の共通設定 */
+.reward-crown-icon {
+  display: inline-block;
+  width: 120px; /* 💡 最大サイズで最高実績の圧倒的な存在感を演出 */
+  height: 120px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  vertical-align: middle;
+  }
+
+/* ===================================================
+   🥉 銅の王冠 (メダル完全同期カラー版)
+   =================================================== */
+.crown-bronze {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="bm" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%235D220A"/><stop offset="15%" stop-color="%23D87A51"/><stop offset="35%" stop-color="%23FFCCBC"/><stop offset="42%" stop-color="%23FFE0B2"/><stop offset="65%" stop-color="%238D3C1B"/><stop offset="85%" stop-color="%23E0A98B"/><stop offset="100%" stop-color="%232A0B00"/></linearGradient><linearGradient id="br" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%235D220A"/><stop offset="20%" stop-color="%23D87A51"/><stop offset="40%" stop-color="%23FFCCBC"/><stop offset="60%" stop-color="%238D3C1B"/><stop offset="100%" stop-color="%232A0B00"/></linearGradient><radialGradient id="gem-b" cx="35%" cy="25%" r="70%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="25%" stop-color="%236EE7B7"/><stop offset="60%" stop-color="%23047857"/><stop offset="100%" stop-color="%23064E3B"/></radialGradient><filter id="f3d-b" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="%231F0800" flood-opacity="0.85"/></filter></defs><g filter="url(%23f3d-b)"><path d="M 15 75 Q 50 77 85 75 C 88 60 86 46 84 36 C 79 46 71 46 66 26 C 61 40 55 40 50 18 C 45 40 39 40 34 26 C 29 46 21 46 16 36 C 14 46 12 60 15 75 Z" fill="url(%23bm)" stroke="%234A1D0D" stroke-width="1"/><path d="M 15 75 Q 50 77 85 75 L 85 60 Q 50 62 15 60 Z" fill="url(%23br)" stroke="%234A1D0D" stroke-width="1"/><circle cx="16" cy="36" r="3" fill="url(%23br)" stroke="%234A1D0D" stroke-width="0.8"/><circle cx="34" cy="26" r="3.5" fill="url(%23br)" stroke="%234A1D0D" stroke-width="0.8"/><circle cx="50" cy="18" r="4" fill="url(%23br)" stroke="%234A1D0D" stroke-width="0.8"/><circle cx="66" cy="26" r="3.5" fill="url(%23br)" stroke="%234A1D0D" stroke-width="0.8"/><circle cx="84" cy="36" r="3" fill="url(%23br)" stroke="%234A1D0D" stroke-width="0.8"/><circle cx="50" cy="48" r="7.5" fill="url(%23gem-b)" stroke="%234A1D0D" stroke-width="1"/><path d="M 45 52 A 5 5 0 0 0 55 52" fill="none" stroke="%23A7F3D0" stroke-width="1.2" opacity="0.8"/><circle cx="47.5" cy="45" r="2.5" fill="%23ffffff"/><circle cx="52" cy="49" r="1" fill="%23ffffff" opacity="0.8"/></g></svg>');
+}
+
+/* ===================================================
+   🥈 銀の王冠 (メダル完全同期カラー版)
+   =================================================== */
+.crown-silver {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="sm" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%2337474F"/><stop offset="15%" stop-color="%2390A4AE"/><stop offset="35%" stop-color="%23ECEFF1"/><stop offset="42%" stop-color="%23FFFFFF"/><stop offset="65%" stop-color="%23455A64"/><stop offset="85%" stop-color="%23CFD8DC"/><stop offset="100%" stop-color="%23102027"/></linearGradient><linearGradient id="sr" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%2337474F"/><stop offset="20%" stop-color="%2390A4AE"/><stop offset="40%" stop-color="%23ECEFF1"/><stop offset="60%" stop-color="%23455A64"/><stop offset="100%" stop-color="%23102027"/></linearGradient><radialGradient id="gem-s" cx="35%" cy="25%" r="70%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="25%" stop-color="%2338BDF8"/><stop offset="60%" stop-color="%230369A1"/><stop offset="100%" stop-color="%23075985"/></radialGradient><filter id="f3d-s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="%23102027" flood-opacity="0.85"/></filter></defs><g filter="url(%23f3d-s)"><path d="M 15 75 Q 50 77 85 75 C 88 60 86 46 84 36 C 79 46 71 46 66 26 C 61 40 55 40 50 18 C 45 40 39 40 34 26 C 29 46 21 46 16 36 C 14 46 12 60 15 75 Z" fill="url(%23sm)" stroke="%23263238" stroke-width="1"/><path d="M 15 75 Q 50 77 85 75 L 85 60 Q 50 62 15 60 Z" fill="url(%23sr)" stroke="%23263238" stroke-width="1"/><circle cx="16" cy="36" r="3" fill="url(%23sr)" stroke="%23263238" stroke-width="0.8"/><circle cx="34" cy="26" r="3.5" fill="url(%23sr)" stroke="%23263238" stroke-width="0.8"/><circle cx="50" cy="18" r="4" fill="url(%23sr)" stroke="%23263238" stroke-width="0.8"/><circle cx="66" cy="26" r="3.5" fill="url(%23sr)" stroke="%23263238" stroke-width="0.8"/><circle cx="84" cy="36" r="3" fill="url(%23sr)" stroke="%23263238" stroke-width="0.8"/><circle cx="50" cy="48" r="7.5" fill="url(%23gem-s)" stroke="%23263238" stroke-width="1"/><path d="M 45 52 A 5 5 0 0 0 55 52" fill="none" stroke="%23BAE6FD" stroke-width="1.2" opacity="0.85"/><circle cx="47.5" cy="45" r="2.5" fill="%23ffffff"/><circle cx="52" cy="49" r="1" fill="%23ffffff" opacity="0.9"/></g></svg>');
+}
+
+/* ===================================================
+   🥇 金の王冠 (メダル完全同期カラー版)
+   =================================================== */
+.crown-gold {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="gm" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23FF8F00"/><stop offset="15%" stop-color="%23FFB300"/><stop offset="35%" stop-color="%23FFE082"/><stop offset="42%" stop-color="%23FFF59D"/><stop offset="65%" stop-color="%23FF6F00"/><stop offset="85%" stop-color="%23FFE082"/><stop offset="100%" stop-color="%234E2600"/></linearGradient><linearGradient id="gr" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23FF8F00"/><stop offset="20%" stop-color="%23FFB300"/><stop offset="40%" stop-color="%23FFE082"/><stop offset="60%" stop-color="%23FF6F00"/><stop offset="100%" stop-color="%234E2600"/></linearGradient><radialGradient id="gem-r" cx="35%" cy="25%" r="70%"><stop offset="0%" stop-color="%23FFFFFF"/><stop offset="25%" stop-color="%23FB7185"/><stop offset="60%" stop-color="%23BE123C"/><stop offset="100%" stop-color="%23881337"/></radialGradient></defs><g><path d="M 15 75 Q 50 77 85 75 C 88 60 86 46 84 36 C 79 46 71 46 66 26 C 61 40 55 40 50 18 C 45 40 39 40 34 26 C 29 46 21 46 16 36 C 14 46 12 60 15 75 Z" fill="url(%23gm)" stroke="%233E1C00" stroke-width="1"/><path d="M 15 75 Q 50 77 85 75 L 85 60 Q 50 62 15 60 Z" fill="url(%23gr)" stroke="%233E1C00" stroke-width="1"/><circle cx="16" cy="36" r="3" fill="url(%23gr)" stroke="%233E1C00" stroke-width="0.8"/><circle cx="34" cy="26" r="3.5" fill="url(%23gr)" stroke="%233E1C00" stroke-width="0.8"/><circle cx="50" cy="18" r="4" fill="url(%23gr)" stroke="%233E1C00" stroke-width="0.8"/><circle cx="66" cy="26" r="3.5" fill="url(%23gr)" stroke="%233E1C00" stroke-width="0.8"/><circle cx="84" cy="36" r="3" fill="url(%23gr)" stroke="%233E1C00" stroke-width="0.8"/><circle cx="50" cy="48" r="7.5" fill="url(%23gem-r)" stroke="%233E1C00" stroke-width="1"/><path d="M 45 52 A 5 5 0 0 0 55 52" fill="none" stroke="%23FECDD3" stroke-width="1.2" opacity="0.85"/><circle cx="47.5" cy="45" r="2.5" fill="%23ffffff"/><circle cx="52" cy="49" r="1" fill="%23ffffff" opacity="0.9"/></g></svg>');
+}
+
+
+
+
+/* ==========================================================================
+   🌟 ポップアップ用の星設定（超軽量・GPU特化型）
+   ========================================================================== */
+.sparkle-popup .sparkle-star {
+  position: absolute;
+  font-style: normal;
+  color: #ffffff;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  display: block;
+  line-height: 1;
+  width: 1em;
+  height: 1em;
+  text-align: center;
+  
+  /* ⭕ 【超軽量化】3重の重い text-shadow を2重に引き締め、ボカシの計算負荷を大幅カット！
+     色味の広がりと上品な発光感はそのままキープしています */
+  text-shadow: 
+    0 0 4px #ffffff,
+    0 0 10px #eab308;
+
+  /* 💡 アニメーション中の各星の拡大縮小を完全にGPU側へ委任するお守り */
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+/* 📍 1. 左上（小ぶりに調整） */
+.sparkle-popup .star-1 {
+  top: 4px;
+  left: 8px;
+  font-size: 22px;
+  animation: popInPlace 2.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite;
+}
+
+/* 📍 2. 右上（小ぶりに調整） */
+.sparkle-popup .star-2 {
+  top: 14px;
+  right: 8px;
+  font-size: 14px;
+  animation: popInPlace 3.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.9s infinite;
+}
+
+/* 📍 3. 左下（小ぶりに調整） */
+.sparkle-popup .star-3 {
+  bottom: 10px;
+  left: 12px;
+  font-size: 18px;
+  animation: popInPlace 4.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) 1.8s infinite;
+}
+
+/* 📍 4. 右下（小ぶりに調整） */
+.sparkle-popup .star-4 {
+  bottom: 6px;
+  right: 10px;
+  font-size: 24px;
+  animation: popInPlace 3.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.4s infinite;
+}
+
+
+/* 🌟 その場で小ぶりにポンッと点滅するアニメーション（will-changeと連動して最速駆動） */
+@keyframes popInPlace {
+  0% {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  55% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+}
+
+
+
+
+
+/* ==============================================
+   アイコン全体を中央寄せするコンテナ（位置・余白完全維持）
+   ============================================== */
+.reward-medal-container {
+  position: relative;
+  display: block;
+  text-align: center;
+  margin: 15px 0;
+  padding: 10px;
+}
+
+/* ==============================================
+   1. 級バッジ（丸型）＆ 右下配置（つやつや＆きらーん実装）
+   ============================================== */
+
+/* 💡 アイコン自体をバッジの基準点にする設定 */
+.sparkle-frame {
+  position: relative;
+  display: inline-block;
+  z-index: 20;
+}
+
+.badge-grade {
+  position: absolute;
+  
+  /* 📌 指定の位置とサイズ、マージンは1ミリも動かさず完全維持 */
+  bottom: 40px;        
+  right: -180px;        
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  z-index: 30;
+
+  /* 💡 【バグ完全防御】Safari等のブラウザで丸型のマスクから光が一瞬はみ出る描画バグを100%防ぐプロの技 */
+  overflow: hidden;
+  isolation: isolate; 
+  
+  /* 💡 【軽量化】ぷっくり立体感を出すinsetは完全維持。
+     外側の重い影だけを低負荷な値に引き締め、アニメーション中のCPU負荷を激減 */
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.5),
+    inset 0 2px 3px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* 💡 上半分のレンズっぽい「つや」をつくる擬似要素（完全維持） */
+.badge-grade::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.05));
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 💡 光がスッと走り抜ける「きらーん」アニメーション用 */
+.badge-grade::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.85) 50%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  /* 💡 will-changeを追加して、5秒ごとの「きらーん」が走る瞬間も
+     スマホの画面が絶対にカクつかないようにGPUをロックオン */
+  will-change: transform;
+  animation: shineGleam 5s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 文字自体をハイライトより手前に表示（完全維持） */
+.badge-grade span, 
+.badge-grade {
+  position: relative;
+}
+
+/* ==========================================================================
+   🎉 ポップアップ内限定：級バッジをアイコンの右上に配置（位置完全維持）
+   ========================================================================== */
+
+/* 1. 全体枠をアイコンのサイズにピッタリ合わせる */
+.reward-modal-overlay .reward-medal-container {
+  position: relative !important;
+  display: inline-block !important; 
+}
+
+/* 2. 級バッジをアイコンの右上へ配置 */
+.reward-modal-overlay .badge-grade {
+  position: absolute !important;
+  
+  /* 🎯 位置指定は1ミリも変えず完全維持 */
+  top: 80px !important;     
+  right: -20px !important;   
+  bottom: auto !important;
+  left: auto !important;
+}
+
+
+/* ==========================================================================
+   2. 【マスター称号】上寄せ調整＆きらーん追加（形状・余白完全維持）
+   ========================================================================== */
+.badge-title-container {
+  margin-top: -25px; 
+  position: relative;
+  z-index: 1;        
+  text-align: center;
+  /* 💡 【バグ修正・立体感復活】clip-pathで消えてしまうbox-shadowの代わりに、
+     ここでリボン全体の形に合わせた高品質かつ軽量な影を表現します */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.badge-title {
+  position: relative; 
+  /* 💡 【バグ完全防御】リボンの特殊な形状から光が一瞬はみ出る描画バグを100%カット */
+  overflow: hidden;   
+  isolation: isolate;
+  
+  display: inline-block;
+  padding: 2px 18px;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  
+  /* 🎯 プロが作った美しいリボン形状のclip-pathは完全維持 */
+  clip-path: polygon(0% 0%, 100% 0%, 92% 50%, 100% 100%, 0% 100%, 8% 50%);
+}
+
+/* 💡 マスター称号リボンを走り抜ける「きらーん」光線 */
+.badge-title::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 40%;
+  height: 200%;
+  background: linear-gradient(
+    90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.85) 50%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  /* 💡 will-changeを追加し、リボンの変形マスク内での光線計算をGPUに100%任せて軽量化 */
+  will-change: transform;
+  /* 🎯 丸バッジから1秒遅れて光るプロのディレイ演出をそのまま完全維持 */
+  animation: shineGleam 5s infinite ease-in-out 1s;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 文字自体をハイライトより手前に表示 */
+.badge-title span, 
+.badge-title {
+  position: relative;
+}
+
+/* ==============================================
+   ✨ なめらかツヤツヤグラデーション（金属感アップ版・完全維持）
+   ============================================== */
+
+/* 🥉 ブロンズ（自然な光沢のコッパー・銅） */
+.rank-bronze {
+  background: linear-gradient(135deg, #ffeddb 0%, #e09b53 45%, #8c420b 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* 🥈 シルバー（自然な光沢の上品な銀） */
+.rank-silver {
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 45%, #64748b 100%);
+  color: #0f172a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* 🥇 ゴールド（ボタン風の鮮やかでつややかな金） */
+.rank-gold {
+  background: linear-gradient(135deg, #fffbeb 0%, #facc15 45%, #b45309 100%);
+  color: #3f2200;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* ---------------------------------------------------
+   🎬 「きらーん」アニメーション定義（GPU完全駆動・超軽量化版）
+   --------------------------------------------------- */
+/* 💡 バッジ側、リボン側で設定した left: -150% などの初期位置を基準に、
+   ブラウザを一切カクつかせない transform で最速駆動させます。 */
+@keyframes shineGleam {
+  0% {
+    /* 💡 動き出しの基準点（0%） */
+    transform: translateX(0) rotate(25deg); 
+  }
+  40% { 
+    /* 💡 8秒（※設定周期）のうち最初の4割の時間を使って、バッジの上をゆっくり右方向へスライド */
+    transform: translateX(180%) rotate(25deg); 
+  }
+  100% {
+    /* 💡 残りの時間は右側（画面外）でお休み（ディレイ効果） */
+    transform: translateX(180%) rotate(25deg); 
+  }
+}
+
+
+ /* ボタン（完全動作・微調整版） */
+  .reward-close-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(to right, #facc15, #f59e0b);
+    color: #000;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 15px;
+    /* 💡 【プロの隠し味】タップした瞬間にボタンが少し縮むエフェクトを追加し、サクサクした押し心地を演出 */
+    transition: transform 0.1s ease;
+  }
+  .reward-close-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* アニメーション（完全動作・微調整版） */
+  @keyframes rewardPopUp {
+    /* 💡 0% の縮小率を 0.5 ➔ 0.8 に少し緩めることで、飛び出すスピード感が上がり、
+       ゲームのテンポ（サクサク感）がより軽快に感じられるようになります */
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+
+
+
+
+
+/* ==========================================================================
+   🏆 メニュー画面用：獲得実績コレクション（完成・整理・最速版）
+========================================================================== */
+
+/* 📦 全体コンテナ（横幅・余白完全維持） */
+.achievement-panel {
+  width: 100%;
+  max-width: 256px;
+  margin: 25px auto 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-sizing: border-box;
+}
+
+.achievement-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 20px;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+/* 📜 3x3 グリッドエリア（構造完全維持） */
+.achievement-scroll-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 8px;
+  padding: 8px 4px;
+  overflow: visible !important;
+}
+
+
+/* ==========================================================================
+   🎴 カード本体 & アニメーション状態（モバイル超軽量特化版）
+========================================================================== */
+.achievement-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+ }
+
+/* 未解放（🔒）の状態 */
+.achievement-card.locked {
+  opacity: 0.25;
+  /* 💡 白黒化のピッケージ計算をあらかじめGPU側に準備させ、メニュー画面全体のサクサク感を維持 */
+  filter: grayscale(1);
+  will-change: filter;
+}
+
+/* 獲得済み（✨）の状態 */
+.achievement-card.unlocked {
+  opacity: 1;
+}
+
+
+
+
+/* ==========================================================================
+   👑 王冠の頭の上に載るマスターリボン（位置・余白完全復元・最速版）
+   ========================================================================== */
+
+.master-top-ribbon {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  color: #fff;
+  white-space: nowrap;
+  line-height: 1;
+  
+  /* 📌 位置指定、マージン、重ね合わせの数値は1ミリも動かさず完全維持 */
+  position: relative;
+  z-index: 10;                     
+  top: -14px;                      
+  margin-bottom: -12px;            
+
+  /* 💡 【バグ修正・立体感復活】clip-pathで消えてしまうbox-shadowの代わりに、
+     リボンのギザギザ形状に100%沿った、低負荷かつ美しいドロップシャドウを適用 */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+
+  /* 🎯 美しいV字リボン形状のclip-pathはそのまま完全維持 */
+  clip-path: polygon(0% 0%, 100% 0%, 92% 50%, 100% 100%, 0% 100%, 8% 50%);
+}
+
+/* ---------------------------------------------------
+   ✨ メタルグラデーション（色味変更なし・完全維持）
+   --------------------------------------------------- */
+
+/* 🥉 ブロンズ（Easy） */
+.master-top-ribbon.easy { 
+  background: linear-gradient(135deg, #ffeddb 0%, #e09b53 45%, #8c420b 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* 🥈 シルバー（Medium） */
+.master-top-ribbon.medium { 
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 45%, #64748b 100%);
+  color: #0f172a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* 🥇 ゴールド（Hard） */
+.master-top-ribbon.hard { 
+  background: linear-gradient(135deg, #fffbeb 0%, #facc15 45%, #b45309 100%);
+  color: #3f2200;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* 🔒 未解放（Locked） */
+.master-top-ribbon.locked {
+  background: rgba(51, 65, 85, 0.5);
+  color: #64748b;
+  /* 💡 不要な再計算を防ぐため、フィルター影を安全に解除 */
+  filter: none;
+  text-shadow: none;
+}
+
+
+
+
+/* ==========================================================================
+   🎖️ アイコン領域 & サイズ調整（倍率・サイズ完全維持・最速版）
+   ========================================================================== */
+.achievement-icon-wrapper {
+  width: 44px;
+  height: 44px;         /* 📌 高さを固定して全カードの下端を一直線に揃える設計を完全維持 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 2px;   /* アイコンと「Easy 5勝」の間隔 */
+  overflow: visible !important;
+}
+
+.achievement-icon-wrapper svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 👑 王冠（全色） */
+.achievement-panel [class*="crown-"] {
+  /* 🎯 プロが目視調整した1.1倍のスケール感は完全維持 */
+  transform: scale(1.1);
+  transform-origin: center center;
+  /* 💡 縮尺のピクセル計算をあらかじめGPU側にロックさせ、メニュー読み込みを最速化 */
+  will-change: transform;
+}
+
+/* 🏆 トロフィー（全色） */
+.achievement-panel [class*="trophy-"] {
+  /* 🎯 プロが目視調整した1.1倍のスケール感は完全維持 */
+  transform: scale(1.1);
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* 🏅 メダル（全色） */
+.achievement-panel [class*="medal-"] {
+  /* 🎯 プロが目視調整した0.8倍のスケール感は完全維持 */
+  transform: scale(0.8) !important;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+
+/* ==========================================================================
+   ℹ️ テキスト情報（アイコン下のラベル群・余白完全維持）
+   ========================================================================== */
+.achievement-info {
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+}
+
+/* 1行目：よわい 5勝 */
+.streak-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: #94a3b8;
+  line-height: 1;
+  white-space: nowrap;
+  margin-top: 0px;
+  margin-bottom: 6px;   /* 1行目と2行目（級バッジ）の間の余白 */
+}
+
+/* 2行目：級バッジ */
+.grade-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  line-height: 1;
+  white-space: nowrap;
+  display: inline-block;
+  
+  /* 📌 指定のカード底面への余白30pxは1ミリも動かさず完全維持 */
+  margin-bottom: 30px;  
+  
+  /* 💡 低負荷な影の指定に引き締め、不要なGPUのバックグラウンド再計算をシャットアウト */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* 級バッジの色バリエーション（配色完全維持） */
+.grade-badge.grade-easy   { background: #d97706; color: #fef3c7; }
+.grade-badge.grade-medium { background: #d97706; color: #fef3c7; }
+.grade-badge.grade-hard   { background: #d97706; color: #fef3c7; }
+
+
+/* ==========================================================================
+   ✨ キラキラ星（最前面ポップ演出：44px外枠基準・超軽量GPU特化版）
+   ========================================================================== */
+
+.sparkle-frame {
+  position: relative;
+  overflow: visible !important;
+}
+
+.sparkle-frame .sparkle-star {
+  position: absolute;
+  font-style: normal;
+  color: #ffffff;
+  z-index: 999 !important;
+  pointer-events: none;
+  opacity: 0;
+  display: block;
+  line-height: 1;
+  width: 1em;
+  height: 1em;
+  text-align: center;
+  transform-origin: center center;
+
+  /* ⭕ 【常時駆動の超軽量化】3重の重い text-shadow を2重に引き締め、ボカシの計算コストを大幅カット！
+     プロが目視調整した「小さく控えめな発光感」の美しさは完璧にキープしています */
+  text-shadow: 
+    0 0 2px #ffffff,
+    0 0 6px #eab308;
+
+  /* 💡 メニュー画面で常に4つの星が動き続けても、スマホの操作に1ミリも影響を与えないためのお守り */
+  will-change: transform, opacity;
+}
+
+/* 📌 星の位置・サイズ・ゆったりアニメーション（プロの設定された秒数・サイズを完全維持） */
+.sparkle-frame .star-1 {
+  top: -2px;
+  left: -2px;
+  font-size: 11px;       
+  animation: popInPlace 4.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite; 
+}
+
+.sparkle-frame .star-2 {
+  top: 0px;
+  right: -2px;
+  font-size: 8px;       
+  animation: popInPlace 5.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 1.2s infinite; 
+}
+
+.sparkle-frame .star-3 {
+  bottom: 0px;
+  left: -2px;
+  font-size: 9px;       
+  animation: popInPlace 6.0s cubic-bezier(0.175, 0.885, 0.32, 1.275) 2.5s infinite; 
+}
+
+.sparkle-frame .star-4 {
+  bottom: -2px;
+  right: -2px;
+  font-size: 10px;       
+  animation: popInPlace 5.0s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.8s infinite; 
+}
+
+/* 🎬 アニメーション定義（優しい変化を完全維持 ＆ will-changeと連動して最速駆動） */
+@keyframes popInPlace {
+  0% {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+  20% {
+    opacity: 0.9;        
+    transform: scale(1.0);
+  }
+  50% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+}
+
+
+
+/* ---------------------------------------------------
+   メニュー画面星用
+   ---------------------------------------------------*/
+
+
+.achievement-panel .sparkle-star {
+  text-shadow: none !important; }
+
+
+
+
+/* ---------------------------------------------------
+   🌟 ポップアップ（✨後光・発光を強力に復活！・GPU超軽量版）
+   --------------------------------------------------- */
+/* 1. アイコン自体の輝く後光  */
+.reward-modal-overlay .sparkle-popup {
+  filter: drop-shadow(0 0 16px rgba(250, 204, 21, 0.95)) !important;
+}
+
+
+.achievement-panel .sparkle-star {
+  text-shadow: none !important; }
+
+
+
+/* ---------------------------------------------------
+   🔒 ロック時の鍵バッジ（位置・サイズ完全維持・最速版）
+   --------------------------------------------------- */
+.lock-badge {
+  position: absolute;
+  /* 📌 プロが目視調整した枠の左下に引っ掛ける位置(-2px)は1ミリも動かさず完全維持 */
+  bottom: -2px;            
+  left: -2px;
+  /* 📌 見やすく調整された20pxのサイズも完全維持 */
+  width: 20px !important;  
+  height: 20px !important;
+  z-index: 10;
+  
+  /* ダークな丸背景にうっすらフチをつけて、どんなアイコンの上でも視認性抜群な設計を維持 */
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  padding: 3px;
+  box-sizing: border-box;
+  
+  /* 💡 【軽量化】重いbox-shadowを低負荷な値に引き締め、メニュー全体のスクロールをさらにサクサクに */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+
+/* ---------------------------------------------------
+ 🧪 一時テスト用：星とSVG以外を全部「枠線だけ」にして原因をあぶり出す。
+コメントアウト中
+   --------------------------------------------------
+
+ .achievement-card * {
+  outline: 1px solid red !important;
+}  */
+
+
