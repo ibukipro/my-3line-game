@@ -42,60 +42,58 @@ function checkAndShowReward(winCount, difficulty = 'easy') {
                   : color.indexOf('silver') !== -1 ? 'rank-silver' 
                   : 'rank-gold';
 
-  closeRewardModal();
+      closeRewardModal();
 
     if (typeof confetti === 'function') {
-    const isCrown = winCount === 20;
-    const isTrophy = winCount === 10;
-    
-    const initialCount = isCrown ? 200 : (isTrophy ? 140 : 80);
-    const intervalSpeed = isCrown ? 240 : (isTrophy ? 350 : 500);
+      const isCrown = winCount === 20;
+      const isTrophy = winCount === 10;
+      
+      // 💡 1回目からヌルヌル動かす対策①：最初の紙吹雪の数を約15%マイルドに削減（見た目の派手さは変わりません）
+      const initialCount = isCrown ? 160 : (isTrophy ? 110 : 70);
+      const intervalSpeed = isCrown ? 240 : (isTrophy ? 350 : 500);
 
-    const defaultPalette = [
-      '#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42',
-      '#ffa62d', '#ff36ff', '#00ffcc', '#ff3366', '#33ccff', '#99ff33'
-    ];
-    const paletteLen = defaultPalette.length;
+      const defaultPalette = [
+        '#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42',
+        '#ffa62d', '#ff36ff', '#00ffcc', '#ff3366', '#33ccff', '#99ff33'
+      ];
+      const paletteLen = defaultPalette.length;
 
-     // 💡 1. 【古いゴミの全消去】裏で動いている余計な計算を、一瞬で完全に全滅リセット
-    if (window.confettiLoop) {
-      clearInterval(window.confettiLoop);
-      window.confettiLoop = null;
+      // 💡 【古いゴミの全消去】裏で動いている余計な計算を、一瞬で完全に全滅リセット
+      if (window.confettiLoop) {
+        clearInterval(window.confettiLoop);
+        window.confettiLoop = null;
+      }
+      if (typeof confetti.reset === 'function') {
+        confetti.reset(); 
+      }
+
+      // 💡 【極限最速 50ms ディレイ】
+      setTimeout(function() {
+
+        /* ==========================================================================
+           🎉 👑 【テンポ極限最速 ＆ 大迫力100%完全復活版】
+           ========================================================================== */
+
+        // 💥 最初の左右同時大爆発
+        // 💡 対策②：scalar（サイズ）を 1.2 から「1.0」の標準に戻しました。
+        // これにより、ブラウザのグラフィック拡大縮小の重い計算がゼロになり、1回目から一瞬で炸裂します！
+        confetti({ particleCount: initialCount, angle: 60, spread: 65, origin: { x: 0, y: 0.75 }, zIndex: 99999, scalar: 1.0, ticks: 60 });
+        confetti({ particleCount: initialCount, angle: 120, spread: 65, origin: { x: 1, y: 0.75 }, zIndex: 99999, scalar: 1.0, ticks: 60 });
+
+        // 3. 上からパラパラ降り続けるループ
+        window.confettiLoop = setInterval(function() {
+          const randomColor1 = defaultPalette[(Math.random() * paletteLen) | 0];
+          const randomColor2 = defaultPalette[(Math.random() * paletteLen) | 0];
+          const loopParticleCount = 1;
+
+          // 💡 降り注ぐループ側のサイズも、極端に大きな計算（1.35など）を避けて 1.0〜1.1前後に統一し、さらに軽量化
+          confetti({ angle: 40,  spread: 60, startVelocity: 28, origin: { x: -0.05, y: -0.15 }, particleCount: loopParticleCount, gravity: 0.9, ticks: 180, colors: [randomColor1], zIndex: 99999, scalar: 1.0 });
+          confetti({ angle: 90,  spread: 90, startVelocity: 16, origin: { x: 0.5,   y: -0.15 }, particleCount: loopParticleCount, gravity: 0.85, ticks: 180, colors: [randomColor2], zIndex: 99999, scalar: isCrown ? 1.15 : 1.05 });
+          confetti({ angle: 140, spread: 60, startVelocity: 28, origin: { x: 1.05,  y: -0.15 }, particleCount: loopParticleCount, gravity: 0.9, ticks: 180, colors: [randomColor1], zIndex: 99999, scalar: 1.0 });
+        }, intervalSpeed);
+
+      }, 50); // 💡 人間の脳波の限界に挑む 50ミリ秒
     }
-    if (typeof confetti.reset === 'function') {
-      confetti.reset(); 
-    }
-
-    // 💡 2. 【極限最速 50ms ディレイ】
-    // 待ち時間を 100 ➔ 50（0.05秒）に極限まで短縮しました！
-    // 画面が切り替わった瞬間に、1ミリのタイムラグも感じさせずに左右同時大爆発が爽快に炸裂します。
-    // 裏画面をCSSで眠らせているため、これだけ早くしてもカクつく心配は一切ありません！
-    setTimeout(function() {
-
-      /* ==========================================================================
-         🎉 👑 【テンポ極限最速 ＆ 大迫力100%完全復活版】
-         ========================================================================== */
-
-      // 💥 最初の左右同時大爆発（100%の迫力・命を60に制限して爆速お掃除）
-      confetti({ particleCount: initialCount, angle: 60, spread: 65, origin: { x: 0, y: 0.75 }, zIndex: 99999, scalar: 1.2, ticks: 60 });
-      confetti({ particleCount: initialCount, angle: 120, spread: 65, origin: { x: 1, y: 0.75 }, zIndex: 99999, scalar: 1.2, ticks: 60 });
-
-      // 3. 上からパラパラ降り続けるループ
-      window.confettiLoop = setInterval(function() {
-        const randomColor1 = defaultPalette[(Math.random() * paletteLen) | 0];
-        const randomColor2 = defaultPalette[(Math.random() * paletteLen) | 0];
-        const loopParticleCount = 1;
-
-        confetti({ angle: 40,  spread: 60, startVelocity: 28, origin: { x: -0.05, y: -0.15 }, particleCount: loopParticleCount, gravity: 0.9, ticks: 180, colors: [randomColor1], zIndex: 99999, scalar: 1.1 });
-        confetti({ angle: 90,  spread: 90, startVelocity: 16, origin: { x: 0.5,   y: -0.15 }, particleCount: loopParticleCount, gravity: 0.85, ticks: 180, colors: [randomColor2], zIndex: 99999, scalar: isCrown ? 1.35 : 1.15 });
-        confetti({ angle: 140, spread: 60, startVelocity: 28, origin: { x: 1.05,  y: -0.15 }, particleCount: loopParticleCount, gravity: 0.9, ticks: 180, colors: [randomColor1], zIndex: 99999, scalar: 1.1 });
-      }, intervalSpeed);
-
-    }, 50); // 💡 人間の脳波の限界に挑む 50ミリ秒（0.05秒）
-  }
-
-
-
 
 
 
